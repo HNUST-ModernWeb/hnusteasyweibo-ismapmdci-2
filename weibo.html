@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>简易版微博</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+  }
+  body {
+    background: #f6f7f9;
+    padding: 20px;
+  }
+  .container {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .title {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .login-btn, .logout-btn {
+    padding: 6px 14px;
+    background: #1677ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+  }
+
+  /* 发布框 */
+  .publish {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px #ccc;
+    margin-bottom: 20px;
+  }
+  .publish textarea {
+    width: 100%;
+    height: 80px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    resize: none;
+    margin-bottom: 10px;
+  }
+  .publish button {
+    padding: 8px 16px;
+    background: #1677ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  /* 动态列表 */
+  .post {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 5px #ccc;
+  }
+  .post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .post-content {
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+  .post-meta {
+    color: #666;
+    font-size: 12px;
+    display: flex;
+    gap: 20px;
+  }
+  .detail-link {
+    color: #1677ff;
+    cursor: pointer;
+  }
+
+  /* 弹窗 */
+  .modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-content {
+    background: white;
+    width: 360px;
+    padding: 20px;
+    border-radius: 8px;
+  }
+  .tabs {
+    display: flex;
+    margin-bottom: 15px;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    cursor: pointer;
+    border-bottom: 2px solid #ddd;
+  }
+  .tab.active {
+    border-color: #1677ff;
+    font-weight: bold;
+  }
+  .form-item {
+    margin-bottom: 12px;
+  }
+  .form-item label {
+    display: block;
+    margin-bottom: 4px;
+  }
+  .form-item input, .form-item textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .modal button {
+    width: 100%;
+    padding: 9px;
+    background: #1677ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+
+  /* 详情弹窗 */
+  .detail-modal .modal-content {
+    width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .comment {
+    padding: 8px 0;
+    border-top: 1px solid #eee;
+    font-size: 14px;
+  }
+  .load-more {
+    text-align: center;
+    color: #1677ff;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  /* 头像预览 */
+  #avatarPreview {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 8px;
+    border: 2px solid #ddd;
+  }
+
+  /* 个人主页样式 */
+  #profileModal .modal-content {
+    width: 400px;
+    text-align: center;
+  }
+  #profileAvatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 20px 0;
+    border: 4px solid #f0f0f0;
+  }
+  #profileName {
+    font-size: 24px;
+    margin: 10px 0;
+  }
+  #profileInfo p {
+    font-size: 18px;
+    color: #333;
+    margin: 15px 0;
+    text-align: left;
+    padding: 0 40px;
+  }
+  #profileInfo span {
+    float: right;
+    color: #666;
+  }
+  #closeProfile {
+    width: auto;
+    padding: 10px 30px;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="title">简易版微博</div>
+    <button class="login-btn" id="loginBtn">登录</button>
+    <div class="user-info" id="userInfo" style="display:none">
+      <img src="" class="avatar" id="userAvatar">
+      <span id="userName"></span>
+      <button class="logout-btn" id="logoutBtn">退出</button>
+    </div>
+  </div>
+
+  <div class="publish">
+    <textarea id="postInput" placeholder="请输入"></textarea>
+    <button id="sendBtn">发送</button>
+  </div>
+
+  <div id="postList"></div>
+  <div class="load-more" id="loadMore">查看更多...</div>
+</div>
+
+<!-- 登录注册弹窗 -->
+<div class="modal" id="loginModal">
+  <div class="modal-content">
+    <div class="tabs">
+      <div class="tab active" data-target="loginForm">登录</div>
+      <div class="tab" data-target="regForm">注册</div>
+    </div>
+
+    <div id="loginForm">
+      <div class="form-item">
+        <label>用户名</label>
+        <input id="loginUser">
+      </div>
+      <div class="form-item">
+        <label>密码</label>
+        <input type="password" id="loginPwd">
+      </div>
+      <button id="doLogin">登录</button>
+    </div>
+
+    <div id="regForm" style="display:none">
+      <div class="form-item">
+        <label>头像（点击选择图片）</label>
+        <img id="avatarPreview" alt="预览">
+        <input type="file" id="avatarFile" accept="image/*" style="margin-top:6px">
+      </div>
+      <div class="form-item">
+        <label>用户名</label>
+        <input id="regUser">
+      </div>
+      <div class="form-item">
+        <label>密码</label>
+        <input type="password" id="regPwd">
+      </div>
+      <div class="form-item">
+        <label>确认密码</label>
+        <input type="password" id="regPwd2">
+      </div>
+      <button id="doReg">注册</button>
+    </div>
+  </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal detail-modal" id="detailModal">
+  <div class="modal-content">
+    <div id="detailPost"></div>
+    <div id="commentList"></div>
+    <div class="load-more" id="loadMoreComment">查看更多评论...</div>
+    <textarea id="commentInput" placeholder="请输入评论" style="margin-top:15px"></textarea>
+    <button id="sendComment">评论</button>
+  </div>
+</div>
+
+<!-- 个人主页弹窗 -->
+<div class="modal" id="profileModal">
+  <div class="modal-content">
+    <img src="" id="profileAvatar" alt="头像">
+    <h2 id="profileName"></h2>
+    <div id="profileInfo">
+      <p>用户名：<span id="profileUname"></span></p>
+      <p>注册时间：<span id="profileTime"></span></p>
+    </div>
+    <button id="closeProfile">关闭</button>
+  </div>
+</div>
+
+<script>
+// 模拟数据
+let users = [];
+let posts = [
+  {id:1, avatar:'https://picsum.photos/36', username:'系统', content:'由各种物质组成的巨型球状天体,叫做星球。星球有一定的形状,有自己的运行轨道。', time:'2025-03-15 18:00:00', commentCount:10},
+  {id:2, avatar:'https://picsum.photos/37', username:'系统', content:'由各种物质组成的巨型球状天体,叫做星球。星球有一定的形状,有自己的运行轨道。', time:'2025-03-15 18:00:00', commentCount:15},
+  {id:3, avatar:'https://picsum.photos/38', username:'系统', content:'由各种物质组成的巨型球状天体,叫做星球。星球有一定的形状,有自己的运行轨道。', time:'2025-03-15 18:00:00', commentCount:0}
+];
+let comments = {1:[{username:'用户1',content:'评论1完整内容',time:'2025-03-15 18:00:00'}],2:[],3:[]};
+
+let currentUser = null;
+let page = 0;
+const size = 10;
+let localAvatar = ''; // 本地头像base64
+
+// 本地头像选择预览
+document.getElementById('avatarFile').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (ev) {
+    localAvatar = ev.target.result;
+    document.getElementById('avatarPreview').src = localAvatar;
+  };
+  reader.readAsDataURL(file);
+});
+
+// 切换登录注册标签
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.target;
+    document.querySelectorAll('#loginForm,#regForm').forEach(f=>f.style.display='none');
+    document.getElementById(target).style.display='block';
+  }
+});
+
+// 打开登录弹窗
+function openLoginModal(){
+  document.getElementById('loginModal').style.display='flex';
+}
+
+// 关闭弹窗
+function closeModal(){
+  document.querySelectorAll('.modal').forEach(m=>m.style.display='none');
+}
+
+// 注册
+document.getElementById('doReg').onclick = () => {
+  const user = document.getElementById('regUser').value;
+  const pwd = document.getElementById('regPwd').value;
+  const pwd2 = document.getElementById('regPwd2').value;
+
+  if (!localAvatar) { alert('请选择头像'); return; }
+  if (!user || !pwd || pwd !== pwd2) { alert('信息不完整或两次密码不一致'); return; }
+  if (users.some(u => u.username === user)) { alert('用户名已存在'); return; }
+
+  users.push({
+    username: user,
+    password: pwd,
+    avatar: localAvatar,
+    regTime: new Date().toLocaleString()
+  });
+
+  alert('注册成功');
+  closeModal();
+};
+
+// 登录
+document.getElementById('doLogin').onclick = () => {
+  const user = document.getElementById('loginUser').value;
+  const pwd = document.getElementById('loginPwd').value;
+  const u = users.find(u=>u.username===user&&u.password===pwd);
+  if(!u){alert('用户名或密码错误');return;}
+  currentUser = u;
+  document.getElementById('loginBtn').style.display='none';
+  const ui = document.getElementById('userInfo');
+  ui.style.display='flex';
+  document.getElementById('userAvatar').src = u.avatar;
+  document.getElementById('userName').innerText = u.username;
+  closeModal();
+};
+
+// 退出
+document.getElementById('logoutBtn').onclick = () => {
+  currentUser = null;
+  document.getElementById('loginBtn').style.display='block';
+  document.getElementById('userInfo').style.display='none';
+};
+
+// 打开登录
+document.getElementById('loginBtn').onclick = openLoginModal;
+
+// 渲染帖子
+function renderPosts(){
+  const list = document.getElementById('postList');
+  const show = posts.slice(page*size, (page+1)*size);
+  show.forEach(p=>{
+    const item = document.createElement('div');
+    item.className='post';
+    item.innerHTML = `
+      <div class="post-header">
+        <img src="${p.avatar}" class="avatar" data-username="${p.username}">
+        <div>${p.username}</div>
+      </div>
+      <div class="post-content">${p.content.length>50?p.content.substring(0,50)+'...':p.content}</div>
+      <div class="post-meta">
+        <span>${p.time}</span>
+        <span>评论数(${p.commentCount})</span>
+        <span class="detail-link" data-id="${p.id}">查看详情</span>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+  // 绑定头像点击事件
+  bindAvatarClick();
+  // 查看详情
+  document.querySelectorAll('.detail-link').forEach(link=>{
+    link.onclick = () => {
+      if(!currentUser){openLoginModal();return;}
+      const id = +link.dataset.id;
+      showDetail(id);
+    }
+  });
+}
+renderPosts();
+
+// 绑定头像点击跳转个人主页
+function bindAvatarClick(){
+  document.querySelectorAll('.post-header .avatar').forEach(avatar=>{
+    avatar.onclick = () => {
+      const username = avatar.dataset.username;
+      // 查找对应用户
+      const user = users.find(u => u.username === username) || 
+                  {username: username, avatar: avatar.src, regTime: '2025.3.15'};
+      showProfile(user);
+    }
+  });
+}
+
+// 打开个人主页
+function showProfile(user){
+  document.getElementById('profileAvatar').src = user.avatar;
+  document.getElementById('profileName').innerText = user.username;
+  document.getElementById('profileUname').innerText = user.username;
+  document.getElementById('profileTime').innerText = user.regTime || '2025.3.15';
+  document.getElementById('profileModal').style.display = 'flex';
+}
+
+// 关闭个人主页
+document.getElementById('closeProfile').onclick = () => {
+  document.getElementById('profileModal').style.display = 'none';
+};
+
+// 加载更多
+document.getElementById('loadMore').onclick = () => {
+  page++;
+  renderPosts();
+};
+
+// 发布帖子
+document.getElementById('sendBtn').onclick = () => {
+  if(!currentUser){openLoginModal();return;}
+  const content = document.getElementById('postInput').value.trim();
+  if(!content||content.length>200){alert('内容不能为空且最多200字');return;}
+  posts.unshift({
+    id:Date.now(),
+    avatar:currentUser.avatar,
+    username:currentUser.username,
+    content:content,
+    time:new Date().toLocaleString(),
+    commentCount:0
+  });
+  document.getElementById('postInput').value='';
+  document.getElementById('postList').innerHTML='';
+  page=0;
+  renderPosts();
+};
+
+// 详情
+function showDetail(id){
+  const p = posts.find(x=>x.id===id);
+  document.getElementById('detailPost').innerHTML = `
+    <div class="post">
+      <div class="post-header"><img src="${p.avatar}" class="avatar" data-username="${p.username}"><div>${p.username}</div></div>
+      <div class="post-content">${p.content}</div>
+      <div class="post-meta">${p.time} 评论数(${p.commentCount})</div>
+    </div>
+  `;
+  // 绑定详情页头像点击
+  bindAvatarClick();
+  renderComments(id);
+  document.getElementById('detailModal').style.display='flex';
+}
+
+// 评论
+function renderComments(postId){
+  const clist = comments[postId]||[];
+  const dom = document.getElementById('commentList');
+  dom.innerHTML = '';
+  clist.slice(0,10).forEach(c=>{
+    const div = document.createElement('div');
+    div.className='comment';
+    div.innerHTML = `<img src="https://picsum.photos/24" class="avatar" style="width:24px;height:24px;vertical-align:middle;margin-right:8px" data-username="${c.username}">${c.username}：${c.content} (${c.time})`;
+    dom.appendChild(div);
+  });
+  // 绑定评论头像点击
+  bindAvatarClick();
+}
+
+// 发送评论
+document.getElementById('sendComment').onclick = () => {
+  if(!currentUser){openLoginModal();return;}
+  const txt = document.getElementById('commentInput').value.trim();
+  if(!txt||txt.length>200){alert('评论不能为空且最多200字');return;}
+  alert('评论成功');
+  document.getElementById('commentInput').value='';
+};
+
+// 关闭空白处关闭
+window.onclick = (e) => {
+  if(e.target.classList.contains('modal')) closeModal();
+};
+</script>
+</body>
+</html>
