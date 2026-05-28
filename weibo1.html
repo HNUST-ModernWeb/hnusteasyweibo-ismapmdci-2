@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>简易版微博</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+  }
+  body {
+    background: #f6f7f9;
+    padding: 20px;
+  }
+  .container {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .title {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .login-btn, .logout-btn {
+    padding: 6px 14px;
+    background: #1677ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .login-btn:hover, .logout-btn:hover {
+    background: #0d66e2;
+  }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .avatar:hover {
+    opacity: 0.9;
+  }
+
+  /* 发布框 */
+  .publish {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px #ccc;
+    margin-bottom: 20px;
+  }
+  .publish textarea {
+    width: 100%;
+    height: 80px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    resize: none;
+    margin-bottom: 10px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .publish textarea:focus {
+    border-color: #1677ff;
+  }
+  .publish button {
+    padding: 8px 16px;
+    background: #1677ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .publish button:hover {
+    background: #0d66e2;
+  }
+  .publish button:disabled {
+    background: #8cb4f0;
+    cursor: not-allowed;
+  }
+
+  /* 动态列表 */
+  .post {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 5px #ccc;
+    transition: box-shadow 0.2s;
+  }
+  .post:hover {
+    box-shadow: 0 0 8px #bbb;
+  }
+  .post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .post-content {
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+  .post-meta {
+    color: #666;
+    font-size: 12px;
+    display: flex;
+    gap: 20px;
+  }
+  .detail-link {
+    color: #1677ff;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .detail-link:hover {
+    color: #0d66e2;
+  }
+
+  /* 弹窗基础样式 */
+  .modal {
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .modal-content {
+    background: white;
+    width: 360px;
+    padding: 20px;
+    border-radius: 8px;
+    animation: modalFadeIn 0.3s;
+  }
+  @keyframes modalFadeIn {
+    from {opacity: 0; transform: translateY(-20px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+  .tabs {
+    display: flex;
+    margin-bottom: 15px;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    cursor: pointer;
+    border-bottom: 2px solid #ddd;
+    transition: border-color 0.2s;
+  }
+  .tab.active {
+    border-color: #1677ff;
+    font-weight: bold;
+  }
+  .form-item {
+    margin-bottom: 12px;
+  }
+  .form-item label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+  }
+  .form-item input, .form-item textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .form-item input:focus {
+    border-color: #1677ff;
+  }
+  .modal button {
+    width: 100%;
+    padding: 9px;
+    background: #1677ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .modal button:hover {
+    background: #0d66e2;
+  }
+
+  /* 详情弹窗 */
+  .detail-modal .modal-content {
+    width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .comment {
+    padding: 8px 0;
+    border-top: 1px solid #eee;
+    font-size: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .comment .avatar {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .comment-content {
+    flex: 1;
+  }
+  .comment-author {
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .comment-time {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+  }
+  .load-more {
+    text-align: center;
+    color: #1677ff;
+    cursor: pointer;
+    margin-top: 10px;
+    padding: 8px;
+    transition: background 0.2s;
+  }
+  .load-more:hover {
+    background: #f0f7ff;
+    border-radius: 4px;
+  }
+  .load-more.disabled {
+    color: #999;
+    cursor: not-allowed;
+    background: none;
+  }
+
+  /* 头像预览 */
+  #avatarPreview {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 8px;
+    border: 2px solid #ddd;
+    cursor: pointer;
+    transition: border 0.2s;
+  }
+  #avatarPreview:hover {
+    border-color: #1677ff;
+  }
+
+  /* 个人主页样式 */
+  #profileModal .modal-content {
+    width: 400px;
+    text-align: center;
+  }
+  #profileAvatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 20px 0;
+    border: 4px solid #f0f0f0;
+  }
+  #profileName {
+    font-size: 24px;
+    margin: 10px 0;
+  }
+  #profileInfo p {
+    font-size: 18px;
+    color: #333;
+    margin: 15px 0;
+    text-align: left;
+    padding: 0 40px;
+  }
+  #profileInfo span {
+    float: right;
+    color: #666;
+  }
+  #closeProfile {
+    width: auto;
+    padding: 10px 30px;
+    margin-top: 20px;
+  }
+
+  /* 空状态样式 */
+  .empty-state {
+    text-align: center;
+    padding: 40px 0;
+    color: #999;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="title">简易版微博</div>
+    <button class="login-btn" id="loginBtn">登录</button>
+    <div class="user-info" id="userInfo" style="display:none">
+      <img src="" class="avatar" id="userAvatar">
+      <span id="userName"></span>
+      <button class="logout-btn" id="logoutBtn">退出</button>
+    </div>
+  </div>
+
+  <div class="publish">
+    <textarea id="postInput" placeholder="分享你的新鲜事..."></textarea>
+    <button id="sendBtn">发送</button>
+  </div>
+
+  <div id="postList"></div>
+  <div class="load-more" id="loadMore">查看更多...</div>
+</div>
+
+<!-- 登录注册弹窗 -->
+<div class="modal" id="loginModal">
+  <div class="modal-content">
+    <div class="tabs">
+      <div class="tab active" data-target="loginForm">登录</div>
+      <div class="tab" data-target="regForm">注册</div>
+    </div>
+
+    <div id="loginForm">
+      <div class="form-item">
+        <label>用户名</label>
+        <input id="loginUser" type="text" placeholder="请输入用户名">
+      </div>
+      <div class="form-item">
+        <label>密码</label>
+        <input type="password" id="loginPwd" placeholder="请输入密码">
+      </div>
+      <button id="doLogin">登录</button>
+    </div>
+
+    <div id="regForm" style="display:none">
+      <div class="form-item">
+        <label>头像（点击选择图片）</label>
+        <img id="avatarPreview" alt="头像预览" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiNkZGQiLz48L3N2Zz4=">
+        <input type="file" id="avatarFile" accept="image/*" style="margin-top:6px">
+      </div>
+      <div class="form-item">
+        <label>用户名</label>
+        <input id="regUser" type="text" placeholder="请设置用户名">
+      </div>
+      <div class="form-item">
+        <label>密码</label>
+        <input type="password" id="regPwd" placeholder="请设置密码">
+      </div>
+      <div class="form-item">
+        <label>确认密码</label>
+        <input type="password" id="regPwd2" placeholder="请再次输入密码">
+      </div>
+      <button id="doReg">注册</button>
+    </div>
+  </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal detail-modal" id="detailModal">
+  <div class="modal-content">
+    <div id="detailPost"></div>
+    <div id="commentList"></div>
+    <div class="load-more" id="loadMoreComment">查看更多评论...</div>
+    <textarea id="commentInput" placeholder="写下你的评论..." style="margin-top:15px; width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; resize:none; height:60px;"></textarea>
+    <button id="sendComment" style="margin-top:10px">评论</button>
+  </div>
+</div>
+
+<!-- 个人主页弹窗 -->
+<div class="modal" id="profileModal">
+  <div class="modal-content">
+    <img src="" id="profileAvatar" alt="用户头像">
+    <h2 id="profileName"></h2>
+    <div id="profileInfo">
+      <p>用户名：<span id="profileUname"></span></p>
+      <p>注册时间：<span id="profileTime"></span></p>
+    </div>
+    <button id="closeProfile">关闭</button>
+  </div>
+</div>
+
+<script>
+// ========== 常量定义 ==========
+const CONST = {
+  PAGE_SIZE: 10, // 每页加载数量
+  MAX_CONTENT_LEN: 200, // 内容最大长度
+  DEFAULT_AVATAR: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzYiIGhlaWdodD0iMzYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMTgiIGN5PSIxOCIgcj0iMTgiIGZpbGw9IiNkZGQiLz48L3N2Zz4='
+};
+
+// ========== 状态管理 ==========
+const state = {
+  users: [], // 用户列表
+  posts: [
+    {id:1, avatar:CONST.DEFAULT_AVATAR, username:'系统', content:'由各种物质组成的巨型球状天体,叫做星球。星球有一定的形状,有自己的运行轨道。', time:'2025-03-15 18:00:00', commentCount:10},
+    {id:2, avatar:CONST.DEFAULT_AVATAR, username:'系统', content:'由各种物质组成的巨型球状天体,叫做星球。星球有一定的形状,有自己的运行轨道。', time:'2025-03-15 18:00:00', commentCount:15},
+    {id:3, avatar:CONST.DEFAULT_AVATAR, username:'系统', content:'由各种物质组成的巨型球状天体,叫做星球。星球有一定的形状,有自己的运行轨道。', time:'2025-03-15 18:00:00', commentCount:0}
+  ], // 帖子列表
+  comments: {1:[{username:'用户1',content:'评论1完整内容',time:'2025-03-15 18:00:00', avatar:CONST.DEFAULT_AVATAR}],2:[],3:[]}, // 评论列表
+  currentUser: null, // 当前登录用户
+  page: 0, // 当前加载页码
+  localAvatar: '', // 本地头像base64
+  isLoadingMore: false // 是否正在加载更多
+};
+
+// ========== DOM 元素缓存 ==========
+const el = {
+  // 通用
+  loginBtn: document.getElementById('loginBtn'),
+  userInfo: document.getElementById('userInfo'),
+  userAvatar: document.getElementById('userAvatar'),
+  userName: document.getElementById('userName'),
+  logoutBtn: document.getElementById('logoutBtn'),
+  postList: document.getElementById('postList'),
+  loadMore: document.getElementById('loadMore'),
+  // 发布
+  postInput: document.getElementById('postInput'),
+  sendBtn: document.getElementById('sendBtn'),
+  // 登录注册弹窗
+  loginModal: document.getElementById('loginModal'),
+  tabs: document.querySelectorAll('.tab'),
+  loginForm: document.getElementById('loginForm'),
+  regForm: document.getElementById('regForm'),
+  loginUser: document.getElementById('loginUser'),
+  loginPwd: document.getElementById('loginPwd'),
+  doLogin: document.getElementById('doLogin'),
+  avatarPreview: document.getElementById('avatarPreview'),
+  avatarFile: document.getElementById('avatarFile'),
+  regUser: document.getElementById('regUser'),
+  regPwd: document.getElementById('regPwd'),
+  regPwd2: document.getElementById('regPwd2'),
+  doReg: document.getElementById('doReg'),
+  // 详情弹窗
+  detailModal: document.getElementById('detailModal'),
+  detailPost: document.getElementById('detailPost'),
+  commentList: document.getElementById('commentList'),
+  loadMoreComment: document.getElementById('loadMoreComment'),
+  commentInput: document.getElementById('commentInput'),
+  sendComment: document.getElementById('sendComment'),
+  // 个人主页
+  profileModal: document.getElementById('profileModal'),
+  profileAvatar: document.getElementById('profileAvatar'),
+  profileName: document.getElementById('profileName'),
+  profileUname: document.getElementById('profileUname'),
+  profileTime: document.getElementById('profileTime'),
+  closeProfile: document.getElementById('closeProfile')
+};
+
+// ========== 工具函数 ==========
+/**
+ * 格式化时间（简化版）
+ * @param {Date|string} time - 时间
+ * @returns {string} 格式化后的时间
+ */
+function formatTime(time) {
+  if (typeof time === 'string') return time;
+  return new Date(time).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+/**
+ * 显示提示框（替代alert，可扩展为自定义弹窗）
+ * @param {string} msg - 提示信息
+ * @param {string} type - 类型：success/error
+ */
+function showToast(msg, type = 'error') {
+  // 简单实现，可扩展为更美观的toast
+  alert(msg);
+  // 进阶版可替换为：
+  // const toast = document.createElement('div');
+  // toast.style.cssText = `position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:4px;color:white;background:${type==='success'?'#52c41a':'#ff4d4f'};z-index:9999;`;
+  // toast.textContent = msg;
+  // document.body.appendChild(toast);
+  // setTimeout(() => document.body.removeChild(toast), 2000);
+}
+
+/**
+ * 检查是否登录
+ * @returns {boolean} 是否登录
+ */
+function checkLogin() {
+  if (!state.currentUser) {
+    openLoginModal();
+    return false;
+  }
+  return true;
+}
+
+// ========== 弹窗控制 ==========
+/**
+ * 打开登录弹窗
+ */
+function openLoginModal() {
+  el.loginModal.style.display = 'flex';
+}
+
+/**
+ * 关闭所有弹窗
+ */
+function closeAllModal() {
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.style.display = 'none';
+  });
+}
+
+// ========== 事件绑定 ==========
+/**
+ * 绑定所有事件
+ */
+function bindEvents() {
+  // 头像选择预览
+  el.avatarFile.addEventListener('change', handleAvatarChange);
+  
+  // 切换登录注册标签
+  el.tabs.forEach(tab => tab.addEventListener('click', handleTabSwitch));
+  
+  // 登录/注册/退出
+  el.loginBtn.addEventListener('click', openLoginModal);
+  el.doLogin.addEventListener('click', handleLogin);
+  el.doReg.addEventListener('click', handleRegister);
+  el.logoutBtn.addEventListener('click', handleLogout);
+  
+  // 发布帖子
+  el.sendBtn.addEventListener('click', handlePublishPost);
+  
+  // 加载更多帖子
+  el.loadMore.addEventListener('click', handleLoadMorePosts);
+  
+  // 发送评论
+  el.sendComment.addEventListener('click', handleSendComment);
+  
+  // 关闭个人主页
+  el.closeProfile.addEventListener('click', () => {
+    el.profileModal.style.display = 'none';
+  });
+  
+  // 点击弹窗外部关闭
+  window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+      closeAllModal();
+    }
+  });
+
+  // 输入框防抖（可选）
+  el.postInput.addEventListener('input', handleInputLimit);
+  el.commentInput.addEventListener('input', handleInputLimit);
+}
+
+/**
+ * 处理头像选择
+ * @param {Event} e - 事件对象
+ */
+function handleAvatarChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  // 校验文件类型和大小
+  if (!file.type.startsWith('image/')) {
+    showToast('请选择图片文件！');
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) { // 2MB限制
+    showToast('头像大小不能超过2MB！');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    state.localAvatar = ev.target.result;
+    el.avatarPreview.src = state.localAvatar;
+  };
+  reader.readAsDataURL(file);
+}
+
+/**
+ * 切换登录注册标签
+ * @param {Event} e - 事件对象
+ */
+function handleTabSwitch(e) {
+  const tab = e.target;
+  el.tabs.forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  
+  const target = tab.dataset.target;
+  el.loginForm.style.display = target === 'loginForm' ? 'block' : 'none';
+  el.regForm.style.display = target === 'regForm' ? 'block' : 'none';
+}
+
+/**
+ * 处理登录
+ */
+function handleLogin() {
+  const username = el.loginUser.value.trim();
+  const password = el.loginPwd.value.trim();
+  
+  // 校验
+  if (!username || !password) {
+    showToast('用户名和密码不能为空！');
+    return;
+  }
+  
+  // 查找用户
+  const user = state.users.find(u => u.username === username && u.password === password);
+  if (!user) {
+    showToast('用户名或密码错误！');
+    return;
+  }
+  
+  // 登录成功
+  state.currentUser = user;
+  updateUserInfoUI();
+  closeAllModal();
+  showToast('登录成功！', 'success');
+  
+  // 清空表单
+  el.loginUser.value = '';
+  el.loginPwd.value = '';
+}
+
+/**
+ * 处理注册
+ */
+function handleRegister() {
+  const username = el.regUser.value.trim();
+  const password = el.regPwd.value.trim();
+  const password2 = el.regPwd2.value.trim();
+  
+  // 校验
+  if (!state.localAvatar) {
+    showToast('请选择头像！');
+    return;
+  }
+  if (!username || !password) {
+    showToast('用户名和密码不能为空！');
+    return;
+  }
+  if (password !== password2) {
+    showToast('两次输入的密码不一致！');
+    return;
+  }
+  if (password.length < 6) {
+    showToast('密码长度不能少于6位！');
+    return;
+  }
+  if (state.users.some(u => u.username === username)) {
+    showToast('用户名已存在！');
+    return;
+  }
+  
+  // 注册成功
+  const newUser = {
+    username,
+    password,
+    avatar: state.localAvatar,
+    regTime: formatTime(new Date())
+  };
+  state.users.push(newUser);
+  
+  showToast('注册成功！请登录', 'success');
+  closeAllModal();
+  
+  // 清空表单和头像
+  el.regUser.value = '';
+  el.regPwd.value = '';
+  el.regPwd2.value = '';
+  el.avatarFile.value = '';
+  state.localAvatar = '';
+  el.avatarPreview.src = CONST.DEFAULT_AVATAR;
+  
+  // 切换到登录标签
+  el.tabs[0].click();
+}
+
+/**
+ * 处理退出登录
+ */
+function handleLogout() {
+  state.currentUser = null;
+  updateUserInfoUI();
+  showToast('已退出登录！', 'success');
+}
+
+/**
+ * 处理发布帖子
+ */
+function handlePublishPost() {
+  if (!checkLogin()) return;
+  
+  const content = el.postInput.value.trim();
+  if (!content || content.length > CONST.MAX_CONTENT_LEN) {
+    showToast(`内容不能为空且最多${CONST.MAX_CONTENT_LEN}字！`);
+    return;
+  }
+  
+  // 创建新帖子
+  const newPost = {
+    id: Date.now(),
+    avatar: state.currentUser.avatar,
+    username: state.currentUser.username,
+    content,
+    time: formatTime(new Date()),
+    commentCount: 0
+  };
+  
+  // 更新状态
+  state.posts.unshift(newPost);
+  state.comments[newPost.id] = []; // 初始化评论
+  
+  // 更新UI
+  el.postInput.value = '';
+  state.page = 0; // 重置页码
+  el.postList.innerHTML = '';
+  renderPosts();
+  
+  showToast('发布成功！', 'success');
+}
+
+/**
+ * 处理加载更多帖子
+ */
+function handleLoadMorePosts() {
+  if (state.isLoadingMore) return;
+  
+  const totalPages = Math.ceil(state.posts.length / CONST.PAGE_SIZE);
+  if (state.page + 1 >= totalPages) {
+    showToast('没有更多内容了！');
+    el.loadMore.classList.add('disabled');
+    return;
+  }
+  
+  state.isLoadingMore = true;
+  el.loadMore.textContent = '加载中...';
+  
+  // 模拟加载延迟（实际项目中是接口请求）
+  setTimeout(() => {
+    state.page++;
+    renderPosts();
+    state.isLoadingMore = false;
+    el.loadMore.textContent = '查看更多...';
+    
+    // 没有更多时禁用
+    if (state.page + 1 >= totalPages) {
+      el.loadMore.classList.add('disabled');
+    }
+  }, 500);
+}
+
+/**
+ * 处理发送评论
+ */
+function handleSendComment() {
+  if (!checkLogin()) return;
+  
+  const content = el.commentInput.value.trim();
+  if (!content || content.length > CONST.MAX_CONTENT_LEN) {
+    showToast(`评论不能为空且最多${CONST.MAX_CONTENT_LEN}字！`);
+    return;
+  }
+  
+  // 获取当前帖子ID（从详情弹窗的DOM中获取）
+  const postId = el.detailPost.dataset.postId;
+  if (!postId) return;
+  
+  // 创建新评论
+  const newComment = {
+    username: state.currentUser.username,
+    avatar: state.currentUser.avatar,
+    content,
+    time: formatTime(new Date())
+  };
+  
+  // 更新状态
+  if (!state.comments[postId]) {
+    state.comments[postId] = [];
+  }
+  state.comments[postId].unshift(newComment);
+  
+  // 更新帖子评论数
+  const post = state.posts.find(p => p.id == postId);
+  if (post) {
+    post.commentCount = state.comments[postId].length;
+  }
+  
+  // 更新UI
+  el.commentInput.value = '';
+  renderComments(postId);
+  
+  showToast('评论成功！', 'success');
+}
+
+/**
+ * 处理输入框长度限制
+ * @param {Event} e - 事件对象
+ */
+function handleInputLimit(e) {
+  const input = e.target;
+  if (input.value.length > CONST.MAX_CONTENT_LEN) {
+    input.value = input.value.substring(0, CONST.MAX_CONTENT_LEN);
+    showToast(`最多只能输入${CONST.MAX_CONTENT_LEN}字！`);
+  }
+}
+
+// ========== UI 渲染函数 ==========
+/**
+ * 更新用户信息UI
+ */
+function updateUserInfoUI() {
+  if (state.currentUser) {
+    el.loginBtn.style.display = 'none';
+    el.userInfo.style.display = 'flex';
+    el.userAvatar.src = state.currentUser.avatar;
+    el.userName.textContent = state.currentUser.username;
+  } else {
+    el.loginBtn.style.display = 'block';
+    el.userInfo.style.display = 'none';
+    el.userAvatar.src = '';
+    el.userName.textContent = '';
+  }
+}
+
+/**
+ * 渲染帖子列表
+ */
+function renderPosts() {
+  const start = state.page * CONST.PAGE_SIZE;
+  const end = start + CONST.PAGE_SIZE;
+  const postsToShow = state.posts.slice(start, end);
+  
+  if (start === 0 && postsToShow.length === 0) {
+    el.postList.innerHTML = '<div class="empty-state">暂无动态，快来发布第一条吧！</div>';
+    return;
+  }
+  
+  postsToShow.forEach(post => {
+    const postEl = document.createElement('div');
+    postEl.className = 'post';
+    postEl.innerHTML = `
+      <div class="post-header">
+        <img src="${post.avatar}" class="avatar" data-username="${post.username}" alt="${post.username}">
+        <div>${post.username}</div>
+      </div>
+      <div class="post-content">${post.content.length > 50 ? post.content.substring(0, 50) + '...' : post.content}</div>
+      <div class="post-meta">
+        <span>${post.time}</span>
+        <span>评论数(${post.commentCount})</span>
+        <span class="detail-link" data-id="${post.id}">查看详情</span>
+      </div>
+    `;
+    el.postList.appendChild(postEl);
+    
+    // 绑定查看详情事件
+    const detailLink = postEl.querySelector('.detail-link');
+    detailLink.addEventListener('click', () => {
+      if (checkLogin()) {
+        showPostDetail(post.id);
+      }
+    });
+  });
+  
+  // 绑定头像点击事件
+  bindAvatarClick();
+}
+
+/**
+ * 绑定所有头像的点击事件（跳转到个人主页）
+ */
+function bindAvatarClick() {
+  document.querySelectorAll('.avatar[data-username]').forEach(avatar => {
+    avatar.addEventListener('click', () => {
+      const username = avatar.dataset.username;
+      const user = state.users.find(u => u.username === username) || {
+        username,
+        avatar: avatar.src,
+        regTime: '2025-03-15'
+      };
+      showUserProfile(user);
+    });
+  });
+}
+
+/**
+ * 显示帖子详情
+ * @param {number} postId - 帖子ID
+ */
+function showPostDetail(postId) {
+  const post = state.posts.find(p => p.id === postId);
+  if (!post) return;
+  
+  // 渲染帖子详情
+  el.detailPost.dataset.postId = postId;
+  el.detailPost.innerHTML = `
+    <div class="post">
+      <div class="post-header">
+        <img src="${post.avatar}" class="avatar" data-username="${post.username}" alt="${post.username}">
+        <div>${post.username}</div>
+      </div>
+      <div class="post-content">${post.content}</div>
+      <div class="post-meta">${post.time} 评论数(${post.commentCount})</div>
+    </div>
+  `;
+  
+  // 渲染评论
+  renderComments(postId);
+  
+  // 显示弹窗
+  el.detailModal.style.display = 'flex';
+  
+  // 绑定头像点击
+  bindAvatarClick();
+}
+
+/**
+ * 渲染评论列表
+ * @param {number} postId - 帖子ID
+ */
+function renderComments(postId) {
+  const comments = state.comments[postId] || [];
+  
+  if (comments.length === 0) {
+    el.commentList.innerHTML = '<div class="empty-state">暂无评论，快来抢沙发！</div>';
+    return;
+  }
+  
+  el.commentList.innerHTML = '';
+  // 只显示前10条（可扩展分页）
+  const commentsToShow = comments.slice(0, 10);
+  
+  commentsToShow.forEach(comment => {
+    const commentEl = document.createElement('div');
+    commentEl.className = 'comment';
+    commentEl.innerHTML = `
+      <img src="${comment.avatar || CONST.DEFAULT_AVATAR}" class="avatar" data-username="${comment.username}" alt="${comment.username}">
+      <div class="comment-content">
+        <div class="comment-author">${comment.username}</div>
+        <div>${comment.content}</div>
+        <div class="comment-time">${comment.time}</div>
+      </div>
+    `;
+    el.commentList.appendChild(commentEl);
+  });
+  
+  // 绑定头像点击
+  bindAvatarClick();
+  
+  // 处理"查看更多评论"状态
+  if (comments.length > 10) {
+    el.loadMoreComment.style.display = 'block';
+  } else {
+    el.loadMoreComment.style.display = 'none';
+  }
+}
+
+/**
+ * 显示用户个人主页
+ * @param {Object} user - 用户信息
+ */
+function showUserProfile(user) {
+  el.profileAvatar.src = user.avatar;
+  el.profileName.textContent = user.username;
+  el.profileUname.textContent = user.username;
+  el.profileTime.textContent = user.regTime || '未知';
+  
+  el.profileModal.style.display = 'flex';
+}
+
+// ========== 初始化 ==========
+function init() {
+  // 缓存DOM元素（已提前缓存）
+  // 绑定事件
+  bindEvents();
+  // 初始化渲染
+  renderPosts();
+  // 初始化用户信息UI
+  updateUserInfoUI();
+}
+
+// 启动应用
+init();
+</script>
+</body>
+</html>
